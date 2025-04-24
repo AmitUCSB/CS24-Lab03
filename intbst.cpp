@@ -30,32 +30,34 @@ void IntBST::clear(Node *n) {
 bool IntBST::insert(int value) {
     if (!root) {
         root = new Node(value);
+        root->parent = nullptr;
         return true;
     }
-    return insert(value, root); 
-
+    return insert(value, root);
 }
 
-// recursive helper for insert (assumes n is never 0)
 bool IntBST::insert(int value, Node *n) {
     if (value > n->info) {
         if (!n->right) {
             n->right = new Node(value);
+            n->right->parent = n; 
             return true;
         } else {
-            insert(value, n->right);
+            return insert(value, n->right);  
         }
     } else if (value < n->info) {
-        if(!n->left) {
+        if (!n->left) {
             n->left = new Node(value);
+            n->left->parent = n;   
             return true;
         } else {
-            insert(value, n->left);
+            return insert(value, n->left); 
         }
     } else {
-        return false;
+        return false;  
     }
 }
+
 
 // print tree data pre-order
 void IntBST::printPreOrder() const {
@@ -143,7 +145,7 @@ IntBST::Node* IntBST::getNodeFor(int value, Node* n) const{
             n = n->left;
         }
     }
-    return NULL; 
+    return nullptr; 
 }
 
 // returns true if value is in the tree; false if not
@@ -172,15 +174,15 @@ IntBST::Node* IntBST::getPredecessorNode(int value) const{
         }
         return p;
     } else {
-        while(p->parent) {
-            if(p->info > p->parent->info) {
-                return p->parent;
-            } else {
-                p = p->parent;
-            }
+        while (p->parent && p == p->parent->left) {
+            p = p->parent;
+        }
+        if (p->parent) {
+            return p->parent;
+        } else {
+            return nullptr;
         }
     }
-    return NULL; // REPLACE THIS NON-SOLUTION
 }
 
 // returns the predecessor value of the given value or 0 if there is none
@@ -193,15 +195,15 @@ int IntBST::getPredecessor(int value) const{
         }
         return p->info;
     } else {
-        while(p->parent) {
-            if(p->info > p->parent->info) {
-                return p->parent->info;
-            } else {
-                p = p->parent;
-            }
+        while (p->parent && p == p->parent->left) {
+            p = p->parent;
+        }
+        if (p->parent) {
+            return p->parent->info;
+        } else {
+            return 0;
         }
     }
-    return 0;
 }
 
 // returns the Node containing the successor of the given value
@@ -215,15 +217,15 @@ IntBST::Node* IntBST::getSuccessorNode(int value) const{
         }
         return p;
     } else {
-        while(p->parent) {
-            if(p->info < p->parent->info) {
-                return p->parent;
-            } else {
-                p = p->parent;
-            }
+        while (p->parent && p == p->parent->right) {
+            p = p->parent;
+        }
+        if (p->parent) {
+            return p->parent;
+        } else {
+            return nullptr;
         }
     }
-    return NULL; // REPLACE THIS NON-SOLUTION
 }
 
 // returns the successor value of the given value or 0 if there is none
@@ -236,31 +238,63 @@ int IntBST::getSuccessor(int value) const{
         }
         return p->info;
     } else {
-        while(p->parent) {
-            if(p->info < p->parent->info) {
-                return p->parent->info;
-            } else {
-                p = p->parent;
-            }
+        while (p->parent && p == p->parent->right) {
+            p = p->parent;
+        }
+        if (p->parent) {
+            return p->parent->info;
+        } else {
+            return 0;
         }
     }
-    return 0; // REPLACE THIS NON-SOLUTION
 }
 
 // deletes the Node containing the given value from the tree
 // returns true if the node exist and was deleted or false if the node does not exist
 bool IntBST::remove(int value){
-    Node* p = root;
-    while(p) {
-        if (value == p->info) {
-            delete p;
-            return true;
-        }
-        if (value > p->info) {
-            p = p->right;
-        } else {
-            p = p->left;
-        }
+    Node* p = getNodeFor(value, root);
+    if (!p) {
+        return false;
     }
-    return false;
+    if (!p->left && !p->right) {
+        if (!p->parent) {
+            root = nullptr;
+        } else {
+            if (p == p->parent->left)
+                p->parent->left = nullptr;
+            else
+                p->parent->right = nullptr;
+        }
+        delete p;
+        return true;
+    }
+    if (!p->left || !p->right) {
+        Node* q = (p->left) ? p->left : p->right;
+        if (!p->parent) {
+            root = q;
+        } else {
+            if (p == p->parent->left)
+                p->parent->left = q;
+            else
+                p->parent->right = q;
+        }
+        q->parent = p->parent;
+        delete p;
+        return true;
+    }
+    Node* r = p->right;
+    while (r->left) {
+        r = r->left;
+    }
+    p->info = r->info;
+    if (r->parent->left == r)
+        r->parent->left = r->right;
+    else
+        r->parent->right = r->right;
+
+    if (r->right)
+        r->right->parent = r->parent;
+
+    delete r;
+    return true;
 }
